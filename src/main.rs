@@ -1,8 +1,8 @@
 use koopa::back::KoopaGenerator;
 use rust_minic::ast;
 use std::env::args;
-use std::fs::{File, read_to_string};
-use std::io::{Error, Result};
+use std::fs::read_to_string;
+use std::io::Result;
 
 #[allow(clippy::ptr_arg)]
 #[rustfmt::skip]
