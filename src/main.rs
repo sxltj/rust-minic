@@ -1,38 +1,17 @@
+mod test;
+
 use koopa::back::KoopaGenerator;
+use rust_minic::asm::GenerateAsm;
 use rust_minic::ast;
 use std::env::args;
+use std::fs;
 use std::fs::read_to_string;
-use std::io::Result;
+use std::io::{Error, ErrorKind, Result};
 
 #[allow(clippy::ptr_arg)]
 #[rustfmt::skip]
 pub mod sysy {
     include!(concat!(env!("OUT_DIR"), "/sysy.rs"));
-}
-
-#[test]
-fn parse_test() {
-    let ast = sysy::CompUnitParser::new().parse(r"
-        int main() {
-            // 注释也应该被删掉哦
-            return 0;
-        }
-    ").unwrap();
-
-    // 输出解析得到的 AST
-    println!("{:#?}", ast);
-}
-
-#[test]
-fn ir_gen_test() {
-    let ast = sysy::CompUnitParser::new().parse(r"
-        int main() {
-            // 注释也应该被删掉哦
-            return 0;
-        }
-    ").unwrap();
-    let program = ast.dump();
-    KoopaGenerator::new(std::io::stdout()).generate_on(&program).unwrap();
 }
 
 fn main() -> Result<()> {
@@ -49,9 +28,14 @@ fn main() -> Result<()> {
 
     // 调用 lalrpop 生成的 parser 解析输入文件
     let ast = sysy::CompUnitParser::new().parse(&input).unwrap();
-
-    // 输出解析得到的 AST
-    
     let program = ast.dump();
-    KoopaGenerator::from_path(output)?.generate_on(&program)
+    match mode.as_str() {
+        "-koopa" =>
+            // 输出解析得到的 AST
+            KoopaGenerator::from_path(output)?.generate_on(&program),
+        "-riscv" =>
+            // 输出 RISC-V 汇编
+            fs::write(output, program.generate()),
+        _ => Err(Error::new(ErrorKind::InvalidInput, "Invalid mode"))
+    }
 }
