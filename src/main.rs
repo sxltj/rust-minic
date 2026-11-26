@@ -1,18 +1,18 @@
 mod test;
 
 use koopa::back::KoopaGenerator;
-use rust_minic::asm::GenerateAsm;
+use lalrpop_util::lalrpop_mod;
+use rust_minic::asm::generate_asm;
 use rust_minic::ast;
 use std::env::args;
 use std::fs;
 use std::fs::read_to_string;
 use std::io::{Error, ErrorKind, Result};
 
+
 #[allow(clippy::ptr_arg)]
 #[rustfmt::skip]
-pub mod sysy {
-    include!(concat!(env!("OUT_DIR"), "/sysy.rs"));
-}
+lalrpop_mod!(sysy);
 
 fn main() -> Result<()> {
     // 解析命令行参数
@@ -35,7 +35,7 @@ fn main() -> Result<()> {
             KoopaGenerator::from_path(output)?.generate_on(&program),
         "-riscv" =>
             // 输出 RISC-V 汇编
-            fs::write(output, program.generate()),
+            fs::write(output, generate_asm(&program)),
         _ => Err(Error::new(ErrorKind::InvalidInput, "Invalid mode"))
     }
 }

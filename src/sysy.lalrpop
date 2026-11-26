@@ -28,9 +28,104 @@ FuncType: FuncType = "int" => FuncType::Int;
 
 Block: Block = "{" <stmt: Stmt> "}" => Block { <> };
 
-Stmt: Stmt = "return" <num: Number> ";" => Stmt::Return(<>);
+Stmt: Stmt = "return" <exp: Exp> ";" => Stmt::Return(<>);
 
-Number: i32 = <IntConst>;
+Number: Exp = <IntConst> => Exp::Number(<>);
+
+UnaryOp: UnaryOp = {
+    "+" => UnaryOp::Plus,
+    "-" => UnaryOp::Minus,
+    "!" => UnaryOp::Not
+}
+
+PrimaryExp: Exp = {
+    "(" <Exp> ")",
+    Number
+}
+
+UnaryExp: Exp = {
+    PrimaryExp,
+    <op: UnaryOp> <exp: UnaryExp> => Exp::Unary { operator: op, operand: Box::new(exp) }
+}
+
+Exp: Exp = LOrExp;
+
+RelOp: BinOp = {
+    "<" => BinOp::Lt,
+    ">" => BinOp::Gt,
+    "<=" => BinOp::Le,
+    ">=" => BinOp::Ge
+}
+
+RelExp: Exp = {
+    AddExp,
+    <lhs: RelExp> <op: RelOp> <rhs: AddExp> => Exp::Binary {
+        operator: op,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs)
+    }
+}
+
+EqOp: BinOp = {
+    "==" => BinOp::Eq,
+    "!=" => BinOp::Ne
+}
+
+EqExp: Exp = {
+    RelExp,
+    <lhs: EqExp> <op: EqOp> <rhs: RelExp> => Exp::Binary {
+        operator: op,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs)
+    }
+}
+
+LAndExp: Exp = {
+    EqExp,
+    <lhs: LAndExp> "&&" <rhs: EqExp> => Exp::Binary {
+        operator: BinOp::And,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs)
+    }
+}
+
+LOrExp: Exp = {
+    LAndExp,
+    <lhs: LOrExp> "||" <rhs: LAndExp> => Exp::Binary {
+        operator: BinOp::Or,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs)
+    }
+}
+
+MulExpOp: BinOp = {
+    "*" => BinOp::Mul,
+    "/" => BinOp::Div,
+    "%" => BinOp::Mod
+}
+
+AddExpOp: BinOp = {
+    "+" => BinOp::Plus,
+    "-" => BinOp::Minus
+}
+
+MulExp: Exp = {
+    UnaryExp,
+    <lhs: MulExp> <op: MulExpOp> <rhs: UnaryExp> => Exp::Binary {
+        operator: op,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs)
+    }
+}
+
+AddExp: Exp = {
+    MulExp,
+    <lhs: AddExp> <op: AddExpOp> <rhs: MulExp> => Exp::Binary {
+        operator: op,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs)
+    }
+}
 
 // 如果匹配到标识符, 就返回这个字符串
 // 一对尖括号在此处指代的是正则表达式匹配到的字符串 (&str)
